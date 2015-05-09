@@ -1,0 +1,7 @@
+from django.conf.urls import patterns, url
+from data_visualization import views
+
+urlpatterns = patterns('',
+    url(r'^$', views.index, name='index'),
+    url(r'^history_plot/$', views.history_plot, name='history_plot'),
+)

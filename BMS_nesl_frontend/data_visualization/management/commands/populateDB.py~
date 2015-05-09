@@ -1,0 +1,30 @@
+from django.core.management.base import BaseCommand, CommandError
+from data_visualization.models import Path_UUID, Menu_Tree
+import urllib, urllib2, json
+
+class Command(BaseCommand):
+    args = '<addr:port>'
+    help = 'Populate Database with path, UUID information from a sMAP server'
+
+    def handle(self, *args, **options):
+        addr = "localhost:8079"
+        if len(args) > 0:
+            self.stdout.write('Use default address and port -- localhost:8079')
+            addr = args[0]
+
+        url = "http://"+addr+"/api/query/uuid"
+        content = urllib2.urlopen(url).read()
+        
+        #convert content into lists
+        content = content[1:-1]
+        content = [uuid.strip().replace('"', '') for uuid in content.split(',')]
+
+        #find corrosponding UUID and save it to database
+        url2 = "http://"+addr+"/api/query"
+        for uuid in content:
+            body = "select Path where uuid = '"+uuid+"'"
+            req = urllib2.Request(url2, body)
+            resp = urllib2.urlopen(req).read()
+            resp = json.loads(resp)
+            path = resp[0]['Path']
+            print str(path)

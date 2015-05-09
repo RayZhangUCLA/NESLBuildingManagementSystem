@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>NESL Sensor Reading Dashboard</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+	{% load staticfiles %}
+	<link rel="stylesheet" type="text/css" href="{% static 'data_visualization/dashboard_style.css' %}" />
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+	<script src="http://code.highcharts.com/stock/highstock.js"></script>
+	<script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
+	<noscript>Sorry, your browser does not support JavaScript!</noscript>
+</head>
+
+<body>
+	<div id="top_banner">
+		<h4>NESL Dashboard</h4>
+	</div>
+	<div class="container-fluid">
+		<div id="wokao" class="row">
+			<div id="nav_tree" class="col-sm-3 col-md-2 sidebar">
+				<ul class="nav nav-sidebar">
+	            	<li><a id="nav_bar_container" href="#">Open Navigation Bar <span class="sr-only">(current)</span></a></li>
+		        </ul>
+			</div>
+			<div id="plot_container" class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+				<h3 class="page-header">Real Time Plot<small><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Real-time plots will be shown here after you choose one)</i></small></h3>
+				<div id="realtime_plot_container" class="row placeholders"></div>
+				<h3 class="page-header">History Plot<small><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Historical data plots will be shown here after you choose one)</i></small></h3>
+				<div id="history_plot_container" class="row placeholders"></div>
+				<h3 class="page-header" >Data Statistics<small><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Data Statistics plots will be shown here after you choose one)</i></small></h3>
+				<div id="data_statistics_container" class="row placeholders"></div>
+			</div>
+		</div>
+	</div>
+	<div class="div_loading"></div>
+
+	<script type="text/javascript">
+		$(document).ready(function(){			
+			// $("#Veris_percentage").click(function(e){
+			// 	e.preventDefault();
+			// 	$.get("data_statistics?type=Veris_percentage", function(data){
+			// 		data =  $.parseJSON(data);
+			// 		add_veris_percentage(data['current'], "Current");
+			// 		add_veris_percentage(data['PowerFactor'], "PowerFactor");
+			// 		add_veris_percentage(data['RealPower'], "Real Power");
+			// 	});
+			// 	$("#statistics_list").hide();				
+			// });
+
+			$("#nav_bar_container").click(function(e){
+				e.preventDefault();
+				$.get("nav_bar?path=", function(data, status){
+					if(!$("ul").hasClass("layer_1")){
+						$("#nav_bar_container").parent().append(data);
+						// set onclick event
+						set_list_click_function(1);
+					}
+				});	
+				$("#nav_bar_container").unbind("click");
+			});
+			
+		});
+
+
+		function show_loading_bar(){ $('body').addClass("loading");}
+		function hide_loading_bar(){ $('body').removeClass("loading");}    
+
+		function hide_ul_layer(layer_number){
+			var layer_class = "layer_"+layer_number;			
+			if ($("ul").hasClass(layer_class)) {
+					$("."+layer_class).hide();
+			}
+		}
+		//set navigation bar
+		function set_list_click_function(layer_number){
+			var ul_id = ".layer_"+layer_number+" li";
+			var listItems = $(ul_id);
+			listItems.each(function(idx, li) {
+				var nav_node = $(li);
+				nav_node.find('a').click(function(){
+					var next_layer = layer_number + 1;
+					var next_layer_class = "layer_"+next_layer;
+					hide_ul_layer(next_layer);
+					var node_path = nav_node.find('a').text();
+					var node_iterator = nav_node.parent();
+					while (!node_iterator.hasClass("layer_1")) {
+						if (node_iterator[0].tagName === "UL") {	
+							if (node_iterator.siblings(':first-child').length > 0) {
+								node_path = node_iterator.siblings(':first-child').text() + "," + node_path;	
+							}
+						}
+						node_iterator = node_iterator.parent();
+					}	
+					var url = "nav_bar?path="+node_path;
+					$.get(url, function(resp, status){
+						if (resp.match("^<ul")) {
+							if (nav_node.children().length <= 1) { //one child for <a></a>
+								//append HTML
+								nav_node.append(resp);
+								//set new click function for current list
+								nav_node.find('a').unbind('click');
+								nav_node.find('a').click(function(e){
+									e.preventDefault();
+									$(this).siblings().toggle();
+								});
+								//set onclick event
+								set_list_click_function(layer_number+1);	
+							}
+						}
+						else
+						{
+							var response = $.parseJSON(resp);
+							var uuid = response['uuid'];
+							var data = response['html'];
+							$(".menu_option").hide(); //hide other menu option
+							nav_node.attr("uuid", uuid);//uuid for this reading feeds
+							nav_node.append(data);
+							nav_node.find('a').unbind('click'); //reset click function
+							nav_node.find('a').click(function(e){
+								e.preventDefault();
+								$(this).siblings().toggle();
+							});
+							//set click function for option menu of current node
+							var view_real_time = nav_node.find('ul').children(":first").find('a');
+							view_real_time.click(function(e){
+								e.preventDefault();
+								var id="realtime_"+uuid
+								if($("#"+id).length){
+								    $('html, body').animate({
+								        scrollTop: $("#"+id).offset().top - 80
+								    }, 2000);
+								}else{
+									//add realtime plot
+									show_loading_bar();
+									var new_url = "load_data?path=" + node_path + "&type=realtime_plot";
+									$.get(new_url, function(info){
+										add_realtime_plot(info, nav_node.find('a').clone().children().remove().end().text(), node_path, id);
+										hide_loading_bar();
+										$('html, body').animate({
+									        scrollTop: $("#"+id).offset().top - 80
+									    }, 2000);
+									});
+								}
+							}); //view realtime plot
+							var view_history_plot = nav_node.find('ul').children(":first").next().find('a');
+							view_history_plot.click(function(e){
+								e.preventDefault();
+								var id="history_"+uuid
+								console.log("path="+node_path+"  uuid="+id);
+								if($("#"+id).length){
+									$('html, body').animate({
+								        scrollTop: $("#"+id).offset().top - 80
+								    }, 2000);
+								}else{
+									show_loading_bar();
+									starttime = Date.now();
+									var new_url = "load_data?path=" + node_path + "&type=history_plot&starttime=" + starttime;
+									$.get(new_url, function(info){
+										add_history_plot(info, nav_node.find('a').clone().children().remove().end().text(), node_path, id);	
+										hide_loading_bar();
+										$('html, body').animate({
+									        scrollTop: $("#"+id).offset().top - 80
+									    }, 2000);
+									});
+								}
+							}); //view history plot
+							var view_statistics = nav_node.find('ul').children(":first").next().next().find('a');
+							view_statistics.siblings().toggle();
+							//view Data Statistics
+							//TODO:more features
+							// var remove_mean = view_statistics.siblings().children(":first").find('a');
+							// remove_mean.click(function(){
+							// 	console.log("remove_mean clicked");
+							// 	var id="history_"+uuid;
+							// 	if($("#"+id).length){
+							// 		console.log("find div");
+							// 		//get chart	
+							// 		var chart=$("#"+id).children().eq(1).highcharts();
+					  //               var seriesLength = chart.series.length;
+					  //               for(var i = seriesLength - 1; i > -1; i--)
+					  //               {
+					  //                   if(chart.series[i].name == "mean reading")
+					  //                       chart.series[i].remove();
+					  //               }
+							// 	}
+							// });
+						}
+					});
+				});	
+			});
+ 			}
+
+
+		//Add real time plot
+		function add_realtime_plot(resp, chart_name, node_path, id) {
+			var response = $.parseJSON(resp);
+			var data = response['data'];
+			var unit = response['unit'];
+			var interval;
+			var tickInterval = null;
+			if(unit == "Active/Inactive" || unit == "Open/Close" || unit == "Present/Absent"){
+				tickInterval=1;
+			}
+
+			if(data.length > 0){
+				$("#realtime_plot_container").append("<div id='"+ id +"' class='col-xs-12 col-sm-6 placeholder'> <img class='reset' alt='cross' style='position: absolute; top:0; right:0; z-index:800;'> <div></div> </div>");
+
+				// Create the chart
+				$("#realtime_plot_container div:last-child").children().last().highcharts({
+		            chart: {
+		                type: 'spline',
+		                animation: Highcharts.svg, // don't animate in old IE
+		                marginRight: 10,
+		                events: {
+		                    load: function () {
+		                        // set up the updating of the chart each 10 second
+		                        var series = this.series[0];
+		                        interval = setInterval(function () {
+		                        	$.get("current_val?path="+node_path, function(data, status){
+		                        		last_data = series.data[series.data.length-1];
+		                        		last_timestamp=last_data['x'];
+		                        		data = $.parseJSON(data)[0];
+		                        		if(data[0] > last_timestamp){
+		                        			series.addPoint(data, true, true);	
+		                        		}
+		                        	});
+		                        }, 10000);
+		                    }
+		                }
+		            },
+		            title: {
+		                text: chart_name
+		            },
+		            xAxis: {
+		                type: 'datetime',
+		                tickPixelInterval: 150
+		            },
+		            yAxis: {
+		                title: {
+		                    text: unit
+		                },
+		                plotLines: [{
+		                    value: 0,
+		                    width: 1,
+		                    color: '#808080'
+		                }],
+		                tickInterval: tickInterval
+		            },
+		            tooltip: {
+		                formatter: function () {
+		                    return '<b>' + this.series.name + '</b><br/>' +
+		                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		                        Highcharts.numberFormat(this.y, 2);
+		                }
+		            },
+		            legend: {
+		                enabled: false
+		            },
+		            exporting: {
+		                enabled: false
+		            },
+		            series: [{
+		                name: chart_name,
+		                data:  data
+		            }]
+		        });
+
+				//Set css
+				$("#realtime_plot_container").children().last().css({"border": "1px solid", "border-color": "#ddd"});
+
+				$("#realtime_plot_container div:last-child img").click(function(){
+					clearInterval(interval);
+					$(this).parent().remove();
+				});			
+			}else{
+				alert("NO data returned");
+			}
+			
+	    }
+
+	    function set_his_plot_button_click_function(this_button, starttime, endtime, path){
+			var url = "load_data?path="+path; //use navigation bar url to get data
+			if (this_button.hasClass('but_old')){
+				url = url + "&type=history_plot&button=older&starttime=" + starttime;
+			} else if(this_button.hasClass('but_new')){
+				url = url + "&type=history_plot&button=newer&endtime=" + endtime;
+			}
+			var div = this_button.parent().parent().parent().parent().children().eq(1); //get second child
+			var chart=div.highcharts();
+			show_loading_bar();
+			$.get(url, function(resp, status){
+				new_data = $.parseJSON(resp)['data'];
+				if (typeof new_data != 'undefined' && new_data.length > 0) {
+					chart.series[0].setData(new_data);
+			        var new_starttime = new_data[0][0];
+					var new_endtime = new_data[new_data.length-1][0];
+					chart.xAxis[0].setExtremes(new Date(new_endtime - 18000000), new Date(new_endtime));
+					console.log(new_starttime);
+					console.log(new_endtime);
+					//reset clicker for this button
+					this_button.attr('onclick','').unbind('click');
+					this_button.click(function(e){
+						e.preventDefault();
+						set_his_plot_button_click_function(this_button, new_starttime, new_endtime, path);	
+					});
+					//reset clicker for another button
+					var another_button = this_button.parent().siblings().find('a');
+					another_button.attr('onclick','').unbind('click');
+					another_button.click(function(e){
+						e.preventDefault();
+						set_his_plot_button_click_function(another_button, new_starttime, new_endtime, path);	
+					});	
+				}
+				hide_loading_bar();
+			});
+		}
+	    
+
+		//Add the plot
+		function add_history_plot(resp, chart_name, path, id) {
+			var response = $.parseJSON(resp);
+			var data = response['data'];
+			var unit = response['unit'];
+			var tickInterval = null;
+			if(unit == "Active/Inactive" || unit == "Open/Close" || unit == "Present/Absent"){
+				tickInterval = 1;
+			}
+
+			if(data.length > 0){
+				$("#history_plot_container").append("<div id='"+id+"' class='col-sm-12 placeholder'> <img class='reset' alt='cross' style='position: absolute; top:0; right:0; z-index:1000;'> <div></div> <nav> <ul class='pager'> <li class='previous'><a href='#'' class='but_old'><span aria-hidden='true'>&larr;</span> Older</a></li> <li class='next'><a href='#'' class='but_new'>Newer <span aria-hidden='true'>&rarr;</span></a></li> </ul> </nav> <form class='form-inline'> <div class='form-group'> <input type='text' class='form-control input-small' placeholder='YYYY/MM/DD'> </div> <button type='submit' class='btn btn-primary'>Jump To</button> </form> </div>");
+
+				$("#history_plot_container div:last-child img").click(function(){
+					$(this).parent().remove();
+				});
+				starttime = data[0][0];
+				endtime = data[data.length-1][0];
+				$("#history_plot_container div:last-child nav ul li a").click(function(e){
+					e.preventDefault();
+					set_his_plot_button_click_function($(this), starttime, endtime, path);
+				});
+
+				$("#history_plot_container div:last-child form").submit(function(e){
+					e.preventDefault();
+					//convert input to timestamp
+					console.log("Jump button hit");
+					var date_string = $(this).find('input').val();
+					try{
+						var new_timestamp = new Date(date_string).getTime()
+						//get data from this time and reset the series
+						console.log("timestamp accquired");
+						url = "load_data?path="+ path + "&type=history_plot&button=newer&endtime=" + new_timestamp;
+						var div = $(this).parent().find('div'); //get second child
+						var chart=div.highcharts();
+						show_loading_bar();
+						$.get(url, function(resp, status){
+							data = $.parseJSON(resp)['data'];
+							console.log("new data accquired");
+							var new_starttime = data[0][0];
+							var new_endtime = data[data.length-1][0];
+							chart.series[0].setData(data);
+							chart.xAxis[0].setExtremes(new Date(new_endtime - 18000000), new Date(new_endtime));
+							//reset button click listener
+							console.log("reset button click function");
+							var older_button = div.siblings('nav').find('.but_old');
+							older_button.attr('onclick','').unbind('click');
+							older_button.click(function(e){
+								e.preventDefault();
+								set_his_plot_button_click_function(older_button, new_starttime, new_endtime, path);	
+							});
+							var newer_button = div.siblings('nav').find('.but_new');
+							newer_button.attr('onclick','').unbind('click');
+							newer_button.click(function(e){
+								e.preventDefault();
+								set_his_plot_button_click_function(newer_button, new_starttime, new_endtime, path);	
+							});
+							hide_loading_bar();
+						});
+					}
+					catch(err){
+						console.log(err.message)
+					}
+				});
+
+				var div = $("#history_plot_container div:last-child div");
+				// Create the chart
+				$("#history_plot_container div:last-child div").highcharts('StockChart', {
+			        chart: {
+			            renderTo: 'container',
+			            events: {
+			             //    selection: function(event) {
+			             //        if (event.xAxis) {
+			             //            var dataX = {value: 0, count: 0};
+			             //            var series = event.currentTarget.series[0];
+			             //            var points = series.points;
+			             //            var min = event.xAxis[0].min, max = event.xAxis[0].max;
+			             //            var mean_line = [];
+
+			             //            for (var i = 0; i < points.length; i++) {
+			             //                if (points[i].x >= min && points[i].x <= max) {
+			             //                    dataX.value += points[i].y;
+			             //                    dataX.count +=1;
+			             //                }
+			             //            }
+			             //            //create a new line marking the mean, max, and min
+			             //            var mean= dataX.value / dataX.count;
+			             //            for (var i = 0; i < points.length; i++) {
+			             //                if (points[i].x >= min && points[i].x <= max) {
+			         				// 		mean_line.push([points[i].x, mean]);                                      
+			             //                }
+			             //            }
+			             //            var chart = div.highcharts();
+			             //            chart.addSeries({
+			             //            	name: "mean reading",
+			             //            	data: mean_line,
+			        					// color: "black"
+			             //            });
+			             //        }
+			             //    }
+			            },
+			            zoomType: 'x'
+			        },
+
+		            rangeSelector : {
+		                selected : 1
+		            },
+		            navigator : {
+		            	adaptToUpdatedData : true
+		            },
+		            title : {
+		                text : chart_name
+		            },
+
+					yAxis: {
+		                title: {
+		                    text: unit,
+		                },
+	                    labels:{
+				            align:'right',
+				            x:-10,
+				        },
+				        // lineWidth : 1,
+				        // offset : 30,
+				        tickInterval: tickInterval
+					},
+
+		            xAxis : {
+		            	minRange: 10 * 1000
+		            },
+
+		            series : [{
+		                name : chart_name,
+		                data : data,
+						type: 'areaspline',
+		                marker : {
+		                    enabled : true,
+		                    radius : 3
+		                },
+		                shadow : true,
+		                tooltip : {
+		                    valueDecimals : 2
+		                },
+		                fillColor : {
+		                    linearGradient : {
+		                        x1: 0,
+		                        y1: 0,
+		                        x2: 0,
+		                        y2: 1
+		                    },
+		                    stops : [
+		                        [0, Highcharts.getOptions().colors[0]],
+		                        [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+		                    ]
+	                	}
+		            }],
+		        });
+				//Set css
+				$("#history_plot_container").children().last().css({"padding": "50px", "border": "1px solid", "border-color": "#ddd"});
+				$(window).trigger('resize');
+
+			}else{
+				alert("No data returned");
+			}
+
+			
+		}
+
+		function add_veris_percentage(data, chart_name){
+			$("#data_statistics_container").append("<div class='col-xs-12 col-sm-6 placeholder'> <img class='reset' alt='cross' src='http://www.rccanada.ca/rccforum/images/rccskin/misc/cross.png' style='position: absolute; top:0; right:0; z-index:800;'> <div></div> </div>");
+			$("#data_statistics_container div:last-child img").click(function(){
+				$(this).parent().remove();
+			});
+	        // Build the chart
+		    $("#data_statistics_container div:last-child").children().last().highcharts({
+				chart: {
+		            plotBackgroundColor: null,
+		            plotBorderWidth: 1,//null,
+		            plotShadow: false,
+                    margin: [0, 0, 0, 0],
+			        spacingTop: 0,
+			        spacingBottom: 0,
+			        spacingLeft: 0,
+			        spacingRight: 0
+		        },
+		        title: {
+		            text: chart_name
+		        },
+		        tooltip: {
+		            pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'
+		        },
+		        plotOptions: {
+		            pie: {
+		                allowPointSelect: true,
+		                cursor: 'pointer',
+		                size: '70%',
+		                dataLabels: {
+		                    enabled: true,
+		                    format: '<b>{point.name}</b>: {point.percentage:.1f} %',
+		                    style: {
+		                        color: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+		                    }
+		                }
+		            }
+		        },
+		        series: [{
+		            type: 'pie',
+		            name: 'Something',
+		            data: data
+		        }]
+		    });
+		}
+
+	    Highcharts.setOptions({
+	        global: {
+	            useUTC:false
+	        }
+	    });
+
+	</script>
+</body>
+</html>

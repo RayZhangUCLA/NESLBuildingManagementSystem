@@ -1,0 +1,26 @@
+from django.shortcuts import render
+from django.http import HttpResponse, Http404
+from django.template import loader, RequestContext
+
+# Create your views here.
+def index(request):
+    try:
+        print "this is index"
+        print "body", request.body
+        print "path", request.path
+        template = loader.get_template('data_visualization/index.html')
+        context = RequestContext(request, {})
+    except:
+        raise Http404
+    return HttpResponse(template.render(context))
+
+def history_plot(request):
+    try:
+        print "this is history plot"
+        print "body", request.body
+        print "path", request.path
+        template = loader.get_template('data_visualization/history_plot.html')
+        context = RequestContext(request, {})
+    except:
+        raise Http404
+    return HttpResponse(template.render(context))

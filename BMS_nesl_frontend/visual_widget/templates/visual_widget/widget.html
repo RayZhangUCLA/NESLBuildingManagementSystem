@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>NESL Sensor Reading widget</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+	<style type="text/css">
+		html, body{
+ 	      border: 0px;
+	      margin: 0px;
+	      padding: 0px;
+		  width: {{ width }}px;
+		  height: {{ height }}px;
+		}
+
+		.highchart{
+		  width: {{ width }}px;
+		  height: {{ height }}px;	
+		}
+		.placeholders {
+		  margin-bottom: 30px;
+		  text-align: center;
+		}
+		.placeholders h4 {
+		  margin-bottom: 0;
+		}
+		.placeholder {
+		  margin-bottom: 20px;
+		  text-align: center;
+		}
+		.placeholder img {
+		  display: block;
+		  border-radius: 50%;
+		}
+		{% if not is_realtime %}	
+			.div_loading{
+			    display:    none;
+			    position:   fixed;
+			    z-index:    1000;
+			    top:        0;
+			    left:       0;
+			    height:     100%;
+			    width:      100%;
+			    background: rgba( 255, 255, 255, .8 ) 
+			                url('http://www.schultzlawoffice.com/img/loading/loading.gif') 
+			                50% 50% 
+			                no-repeat;
+			}
+			body.loading {
+			    overflow: hidden;   
+			}
+			body.loading .div_loading {
+			    display: block;
+			}
+		{% endif %}
+		</style>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+	<script src="http://code.highcharts.com/stock/highstock.js"></script>
+	<script src="http://code.highcharts.com/stock/modules/exporting.js"></script>
+	<noscript>Sorry, your browser does not support JavaScript!</noscript>
+</head>
+
+<body>
+	<div id="container"></div>
+	<div class="div_loading"></div>
+
+	<script type="text/javascript">
+		{% if is_realtime %}
+			$(function() {
+				$("#container").append("<div class='placeholder'><div class='highchart'></div> </div>");
+				var data = {{ data }};
+				var unit = "{{ unit }}";
+				var chart_name = "{{ chart_name }}";
+				var node_path = "{{ path }}";
+				var interval;
+				var tickInterval = null;
+				if(unit == "Active/Inactive" || unit == "Open/Close" || unit == "Present/Absent"){
+					tickInterval=1;
+				}
+				// Create the chart
+				$("#container div:last-child").children().last().highcharts({
+		            chart: {
+		                type: 'spline',
+		                animation: Highcharts.svg, // don't animate in old IE
+		                marginRight: 10,
+		                events: {
+		                    load: function () {
+		                        // set up the updating of the chart each 10 second
+		                        var series = this.series[0];
+		                        interval = setInterval(function () {
+		                        	$.get("current_val?path="+node_path, function(data, status){
+		                        		last_data = series.data[series.data.length-1];
+		                        		last_timestamp=last_data['x'];
+		                        		data = $.parseJSON(data)[0];
+		                        		if(data[0] > last_timestamp){
+		                        			series.addPoint(data, true, true);	
+		                        		}
+		                        	});
+		                        }, 10000);
+		                    }
+		                }
+		            },
+		            title: {
+		                text: chart_name
+		            },
+		            xAxis: {
+		                type: 'datetime',
+		                tickPixelInterval: 150
+		            },
+		            yAxis: {
+		                title: {
+		                    text: unit
+		                },
+		                plotLines: [{
+		                    value: 0,
+		                    width: 1,
+		                    color: '#808080'
+		                }],
+		                tickInterval: tickInterval
+		            },
+		            tooltip: {
+		                formatter: function () {
+		                    return '<b>' + this.series.name + '</b><br/>' +
+		                        Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+		                        Highcharts.numberFormat(this.y, 2);
+		                }
+		            },
+		            legend: {
+		                enabled: false
+		            },
+		            exporting: {
+		                enabled: false
+		            },
+		            series: [{
+		                name: chart_name,
+		                data:  data
+		            }]
+		        });
+
+		    });
+		{% else %}
+			function show_loading_bar(){ $('body').addClass("loading");}
+			function hide_loading_bar(){ $('body').removeClass("loading");}    
+
+		    function set_his_plot_button_click_function(this_button, starttime, endtime, path){
+				var url = "load_data?path="+path; //use navigation bar url to get data
+				if (this_button.hasClass('but_old')){
+					url = url + "&type=history_plot&button=older&starttime=" + starttime;
+				} else if(this_button.hasClass('but_new')){
+					url = url + "&type=history_plot&button=newer&endtime=" + endtime;
+				}
+				var div = this_button.parent().parent().parent().parent().children().eq(0); //get second child
+				var chart=div.highcharts();
+				show_loading_bar();
+				$.get(url, function(resp, status){
+					new_data = $.parseJSON(resp)['data'];
+					if (typeof new_data != 'undefined' && new_data.length > 0) {
+						chart.series[0].setData(new_data);
+				        var new_starttime = new_data[0][0];
+						var new_endtime = new_data[new_data.length-1][0];
+						chart.xAxis[0].setExtremes(new Date(new_endtime - 18000000), new Date(new_endtime));
+						// console.log(new_starttime);
+						// console.log(new_endtime);
+						//reset clicker for this button
+						this_button.attr('onclick','').unbind('click');
+						this_button.click(function(e){
+							e.preventDefault();
+							set_his_plot_button_click_function(this_button, new_starttime, new_endtime, path);	
+						});
+						//reset clicker for another button
+						var another_button = this_button.parent().siblings().find('a');
+						another_button.attr('onclick','').unbind('click');
+						another_button.click(function(e){
+							e.preventDefault();
+							set_his_plot_button_click_function(another_button, new_starttime, new_endtime, path);	
+						});	
+					}
+					hide_loading_bar();
+				});
+			}
+		   
+			$(function() {
+				$("#container").append("<div class='placeholder'> <div class='highchart'></div> <nav> <ul class='pager'> <li class='previous'><a href='#'' class='but_old'><span aria-hidden='true'>&larr;</span> Older</a></li> <li class='next'><a href='#'' class='but_new'>Newer <span aria-hidden='true'>&rarr;</span></a></li> </ul> </nav> <form class='form-inline'> <div class='form-group'> <input type='text' class='form-control input-small' placeholder='YYYY/MM/DD'> </div> <button type='submit' class='btn btn-primary'>Jump To</button> </form> </div>");
+				
+				var data = {{ data }};
+				var unit = "{{ unit }}";
+				var chart_name = "{{ chart_name }}";
+				var path = "{{ path }}";
+				var tickInterval = null;
+				if(unit == "Active/Inactive" || unit == "Open/Close" || unit == "Present/Absent"){
+					tickInterval = 1;
+				}
+				starttime = data[0][0];
+				endtime = data[data.length-1][0];
+				$("#container div:last-child nav ul li a").click(function(e){
+					e.preventDefault();
+					set_his_plot_button_click_function($(this), starttime, endtime, path);
+				});
+
+				$("#container div:last-child form").submit(function(e){
+					e.preventDefault();
+					//convert input to timestamp
+					// console.log("Jump button hit");
+					var date_string = $(this).find('input').val();
+					try{
+						var new_timestamp = new Date(date_string).getTime()
+						//get data from this time and reset the series
+						// console.log("timestamp accquired");
+						url = "load_data?path="+ path + "&type=history_plot&button=newer&endtime=" + new_timestamp;
+						var div = $(this).parent().find('div'); //get second child
+						var chart=div.highcharts();
+						show_loading_bar();
+						$.get(url, function(resp, status){
+							data = $.parseJSON(resp)['data'];
+							// console.log("new data accquired");
+							var new_starttime = data[0][0];
+							var new_endtime = data[data.length-1][0];
+							chart.series[0].setData(data);
+							chart.xAxis[0].setExtremes(new Date(new_endtime - 18000000), new Date(new_endtime));
+							//reset button click listener
+							console.log("reset button click function");
+							var older_button = div.siblings('nav').find('.but_old');
+							older_button.attr('onclick','').unbind('click');
+							older_button.click(function(e){
+								e.preventDefault();
+								set_his_plot_button_click_function(older_button, new_starttime, new_endtime, path);	
+							});
+							var newer_button = div.siblings('nav').find('.but_new');
+							newer_button.attr('onclick','').unbind('click');
+							newer_button.click(function(e){
+								e.preventDefault();
+								set_his_plot_button_click_function(newer_button, new_starttime, new_endtime, path);	
+							});
+							hide_loading_bar();
+						});
+					}
+					catch(err){
+						console.log(err.message)
+					}
+				});
+
+				var div = $("#container div:last-child div");
+				// Create the chart
+				$("#container div:last-child div").highcharts('StockChart', {
+			        chart: {
+			            renderTo: 'container',
+			            zoomType: 'x'
+			        },
+
+		            rangeSelector : {
+		                selected : 1
+		            },
+		            navigator : {
+		            	adaptToUpdatedData : true
+		            },
+		            title : {
+		                text : chart_name
+		            },
+
+					yAxis: {
+		                title: {
+		                    text: unit,
+		                },
+	                    labels:{
+				            align:'right',
+				            x:-10,
+				        },
+				        tickInterval: tickInterval
+					},
+
+		            xAxis : {
+		            	minRange: 10 * 1000
+		            },
+
+		            series : [{
+		                name : chart_name,
+		                data : data,
+						type: 'areaspline',
+		                marker : {
+		                    enabled : true,
+		                    radius : 3
+		                },
+		                shadow : true,
+		                tooltip : {
+		                    valueDecimals : 2
+		                },
+		                fillColor : {
+		                    linearGradient : {
+		                        x1: 0,
+		                        y1: 0,
+		                        x2: 0,
+		                        y2: 1
+		                    },
+		                    stops : [
+		                        [0, Highcharts.getOptions().colors[0]],
+		                        [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+		                    ]
+	                	}
+		            }],
+		        });
+				$(window).trigger('resize');
+				
+			});
+		{% endif %}
+	    Highcharts.setOptions({
+	        global: {
+	            useUTC:false
+	        }
+	    });
+	</script>
+</body>
+</html>

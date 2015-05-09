@@ -1,0 +1,27 @@
+#top_banner {
+    background-image: url('images/NESL_topbanner.gif');
+    background-size: cover;
+    height: 90px;
+    padding:5px;
+}
+#nav_tree {
+    line-height:30px;
+    background-color:#eeeeee;
+    height:500px;
+    width:200px;
+    float:left;
+    padding:5px;
+}
+#plot_container {
+    background-color: green;
+    height: 500px;
+    float:left;
+    padding:10px;
+}
+#footer {
+    background-color:black;
+    color:white;
+    clear:both;
+    text-align:center;
+    padding:5px;
+}

@@ -1,0 +1,23 @@
+body {
+        background: url('images/index_background.jpg') no-repeat center center;
+	background-size: cover;
+      }
+
+#his_data_button {
+    position: absolute;
+    bottom: 15%;
+    left: 30%;
+    }
+
+#cur_data_button {
+    position: absolute;
+    bottom: 15%;
+    left: 55%;
+    }
+
+h1 {
+    position: absolute;
+    color: gold;
+    top: 17%;
+    left: 30%;
+}

@@ -1,0 +1,9 @@
+body {
+        background: url('images/index_background.jpg') no-repeat center center;
+	background-size: cover;
+      }
+button {
+    position: absolute;
+    bottom: 20%;
+    left: 40%;
+    }
