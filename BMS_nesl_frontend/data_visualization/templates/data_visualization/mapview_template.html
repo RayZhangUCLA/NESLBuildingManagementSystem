@@ -1,0 +1,13 @@
+{% extends 'data_visualization/base_template.html' %}
+{% load staticfiles %}
+{% block mapview_tab_class %}active{% endblock %}
+{% block tab_script %}<script src="{% static "data_visualization/js/canvas.js" %}"></script>{% endblock %}
+{% block body_block %}
+<div class="mapview">
+    <div id="container" class="heatmap_switch heatmap_selected"></div>
+    <div id="watermap" class="heatmap_switch"></div>
+    <div id="controlmap" class="heatmap_switch"></div>
+    <button type="button" class="btn heatmapButton btn_selected" id="P" >Power</button>
+    <button type="button" class="btn heatmapButton" id="W" >Water</button>
+</div>
+{% endblock %}

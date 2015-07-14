@@ -85,6 +85,8 @@ class Command(BaseCommand):
                     path = str(resp[0]['Path'])
                     url = "http://128.97.93.240:8079/api/query/uuid/"+str(uuid)+ "/Properties__UnitofMeasure"
                     resp = get_resp_from_server(url)
+                    if not resp:
+                        continue
                     unit = resp[0]
                     data_type = find_data_type_by_unit(unit)
                     p_u = Path_UUID(path=path, uuid=uuid, data_type=data_type)

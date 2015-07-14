@@ -3,230 +3,381 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.http import HttpResponse, Http404
 from django.template import loader, RequestContext
 from data_visualization.models import Menu_Tree, Path_UUID
-import urllib, urllib2, json, time
+import urllib, urllib2, json, time, sqlite3
+
+import smap_query
+import data_query
+
+smap_server_ip=''
 
 # Create your views here.
 def index(request):
-    try:
-        template = loader.get_template('data_visualization/index.html')
-        context = RequestContext(request, {})
-    except:
-        raise Http404
-    return HttpResponse(template.render(context))
+	try:
+		template = loader.get_template('data_visualization/index.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
 
 def dashboard(request):
-    try:
-        template = loader.get_template('data_visualization/dashboard.html')
-        context = RequestContext(request, {})
-    except:
-        raise Http404
-    return HttpResponse(template.render(context))
+	try:
+		template = loader.get_template('data_visualization/dashboard.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
 
 def get_resp_from_server(url):
-    req = urllib2.Request(url)
-    resp = urllib2.urlopen(req).read()
-    resp = json.loads(resp)
-    return resp
+	req = urllib2.Request(url)
+	resp = urllib2.urlopen(req).read()
+	resp = json.loads(resp)
+	return resp
 
-def nav_bar_loader(request):
-    nav_bar_path = ""
-    if request.GET['path'] == "":
-        nav_bar_path = "root"
-    else:
-        nav_bar_path = request.GET['path']
-    
-    print nav_bar_path
-    #Get corrosponding content
-    nav_tree_text = Menu_Tree.objects.get(tree_id=1).tree
-    nav_tree = json.loads(nav_tree_text)
-    layer_counter = 1
-    returned_list = ""
-    if nav_bar_path == "root":
-        returned_list = "<ul class='layer_" + str(layer_counter) + " nav' style='margin-left: 10px; width:120%;'>"
-        for key in nav_tree:
-            returned_list = returned_list+"<li><a href='#'>"+key+"<span class='sr-only'></span></a></li>"
-        returned_list = returned_list + "</ul>"
-    else:
-        path_list = [tag.strip() for tag in nav_bar_path.split(',')]
-        target_tree = nav_tree
-        for tag in path_list:
-            target_tree = target_tree[tag]
-            layer_counter += 1
-        if target_tree:
-            #generate nav bar
-            returned_list = "<ul class='layer_"+ str(layer_counter) +" nav' style='margin-left: 10px; width:100%;'>"
-            for key in target_tree:
-                returned_list = returned_list+"<li><a href='#'>"+key+"<span class='sr-only'></span></a></li>"
-            returned_list = returned_list + "</ul>"
-        else:
-            #return options menu string
-            returned_list = {}
-            reading_path = "/" + nav_bar_path.replace(",", "/")
-            # print "debug::nav_bar_loader -> reading_path=",reading_path
-            try:
-                p_u = Path_UUID.objects.get(path=reading_path) #TODO:multiple objects returned
-                uuid = p_u.uuid
-            except MultipleObjectsReturned:
-                p_us = Path_UUID.objects.filter(path=reading_path).values()
-                uuid = p_us[0]['uuid']
-            # print "debug::nav_bar_loader -> uuid=", uuid
-            returned_list['uuid']=uuid    
-            returned_list['html'] = \
-            "<ul class='menu_option nav' style='margin-left:10px;width:105%;'>\
-                <li><a href='#''><i>1. View Realtime Plot</i> <span class='sr-only'></span></a></li>\
-                <li><a href='#'><i>2. View History Plot</i> <span class='sr-only'></span></a></li>\
-                <li><a href='#'><i>3. View Data Statistics(Comming Soon)</i> <span class='sr-only'></span></a>\
-                </li>\
-            </ul>"
-            returned_list = json.dumps(returned_list)    
-    return HttpResponse(returned_list)
+def get_resp_from_server_wo_load_json(url):
+	req = urllib2.Request(url)
+	resp = urllib2.urlopen(req).read()
+	return resp
 
-def load_data(request):
-    reading_path = request.GET['path']
-    reading_path = "/" + reading_path.replace(",", "/")
-    # print "reading_path=",reading_path
-    plot_type = request.GET['type']
-    # print plot_type
-    try:
-        p_u = Path_UUID.objects.get(path=reading_path)
-        uuid = p_u.uuid
-        print "uuid=", uuid
-        if plot_type == "history_plot":
-            if 'button' not in request.GET:
-                button_type = "older"
-            else:
-                button_type = request.GET['button']
-            if button_type == "older":
-                starttime = request.GET['starttime']
-                url = "http://localhost:8079/api/prev/uuid/"+str(uuid)+"?starttime="+starttime+"&limit=300000"
-            else:
-                endtime = request.GET['endtime']
-                url = "http://localhost:8079/api/data/uuid/"+str(uuid)+"?starttime="+endtime+"&limit=300000"
-        if plot_type == "realtime_plot":
-            now = int(time.time())
-            url = "http://localhost:8079/api/prev/uuid/"+str(uuid)+"?starttime="+str(now*1000)+"&limit=20" 
-        #get data
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"]    
-        returned_info = {}
-        returned_info['uuid'] = uuid
-        returned_info['data'] = data
-        #get unit
-        url = "http://localhost:8079/api/query/uuid/"+str(uuid)+ "/Properties__UnitofMeasure"
-        resp = get_resp_from_server(url)
-        unit = resp[0]
-        returned_info['unit'] = unit
-        returned_info = json.dumps(returned_info)
-    except MultipleObjectsReturned:  #TODO: multiple objects
-        p_us = Path_UUID.objects.filter(path=reading_path).values()
-        total_data = []
-        p_u = p_us[-1]
-        uuid = p_u['uuid']
-        print "multiple",uuid
-        if plot_type == "history_plot":
-            if 'button' not in request.GET:
-                button_type = "older"
-            else:
-                button_type = request.GET['button']
-            if button_type == "older":
-                starttime = request.GET['starttime']
-                url = "http://localhost:8079/api/prev/uuid/"+str(uuid)+"?starttime="+starttime+"&limit=150000"
-            else:
-                endtime = request.GET['endtime']
-                url = "http://localhost:8079/api/data/uuid/"+str(uuid)+"?starttime="+endtime+"&limit=150000"
-        if plot_type == "realtime_plot":
-            now = int(time.time())
-            url = "http://localhost:8079/api/prev/uuid/"+str(uuid)+"?starttime="+str(now*1000)+"&limit=20"
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"]
-        returned_info={}
-        returned_info['data'] = data
-        #get unit
-        url = "http://localhost:8079/api/query/uuid/"+str(uuid)+ "/Properties__UnitofMeasure"
-        resp = get_resp_from_server(url)
-        unit = resp[0]
-        returned_info['unit'] = unit
-        returned_info = json.dumps(returned_info)
-    return HttpResponse(returned_info)
+def get_history_data_from_smap(starttime, endtime, uuid):
+	request_url = "http://"+smap_server_ip+"/api/data/uuid/" + str(uuid) + "?starttime=" + str(starttime) + "&endtime=" + str(endtime)
+	#get data
+	#print "request_url", request_url
+	resp = get_resp_from_server(request_url)
+	#print "resp", resp
+	data = resp[0]["Readings"]    
+	return data
 
-def current_val(request):
-    path = request.GET['path']
+def get_current_data_from_smap(uuid): #returned type is float
+	url = "http://"+smap_server_ip+"/api/prev/uuid/"+str(uuid) 
+	#get data
+	resp = get_resp_from_server(url)
+	if len(resp) == 0:
+		return [] 
+	data = resp[0]["Readings"]    
+	return data
 
-    #return data readings
-    reading_path = "/" + path.replace(",", "/")
-    # print "reading_path=",reading_path
-    try:
-        p_u = Path_UUID.objects.get(path=reading_path)
-        uuid = p_u.uuid
-        url = "http://localhost:8079/api/prev/uuid/"+str(uuid) 
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"]
-        returned_list = str(data)
-    except MultipleObjectsReturned: #TODO
-        p_us = Path_UUID.objects.filter(path=reading_path).values()
-        p_u = p_us[-1]
-        uuid = p_u['uuid']
-        url = "http://localhost:8079/api/prev/uuid/"+str(uuid)
-        resp = get_resp_from_server(url)
-        data = str(resp[0]["Readings"])
-        returned_list = data
-            
-    return HttpResponse(returned_list)
+def get_data_unit_from_smap(uuid): #returned type is float
+	url = "http://"+smap_server_ip+"/api/query/uuid/"+str(uuid)+ "/Properties__UnitofMeasure"
+	resp = get_resp_from_server(url)
+	unit = resp[0]
+	return unit
 
-def data_statistics(request):
-    returned_list = {}
-    #get current data
-    path = "/Boelter Hall/NESL lab/Smart Electric Meter/VerisE30A042/Current/sensor"
-    total_current_usage = 0
-    current_usage_list=[]
-    for i in range(42):
-        query_path = path+str(i+1)
-        p_u = Path_UUID.objects.get(path=query_path)
-        uuid = p_u.uuid
-        url = "http://localhost:8079/api/prev/uuid/"+str(uuid)
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"][0]
-        total_current_usage += data[1]
-        current_usage_list.append(data[1])
-    returned_list['current'] = []
-    for i in range(42):
-        if current_usage_list[i] != 0:
-            returned_list['current'].append(['Sensor'+str(i+1), current_usage_list[i]/total_current_usage])
+def get_house_layout_data(request):
+	with sqlite3.connect("/home/ray/sources/Django_frontend/BMS_nesl_frontend/dashboard.db") as conn:
+		curs = conn.cursor()
+		curs.execute("SELECT description, x_coord, y_coord, tab_type, channel_units, uuid, heat_map_enable FROM house_layout WHERE heat_map_enable = 'TRUE'")
+		house_layout_data = curs.fetchall()
+		stream_json_arr = []
+		for stream in house_layout_data:
+			val = get_current_data_from_smap(stream[5])
+			if len(val) == 0:
+				continue
+			stream_json = {"description": stream[0],
+						  "x_coord": stream[1], 
+						  "y_coord": stream[2],
+						  "tab_type": stream[3],
+						  "channel_units": stream[4],
+						  "value": val[0][1],
+						  "heat_map_enable": stream[6]}
+			stream_json_arr.append(stream_json)
+		response = HttpResponse(json.dumps(stream_json_arr))
+		return response
+			
+def get_history_data(request):
+	if 'uuid' in request.GET:
+		uuid = request.GET['uuid']
+	elif 'path' in request.GET:
+		path = request.GET['path']
+		try:
+			p_u = Path_UUID.objects.get(path=path)
+			uuid = p_u.uuid
+		except MultipleObjectsReturned:
+			p_us = Path_UUID.objects.filter(path=reading_path).values()
+			total_data = []
+			p_u = p_us[-1]
+			uuid = p_u['uuid']
+		except:
+			raise Http404
+	else:
+		raise Http404
+	try:
+		if 'endtime' not in request.GET:
+			endtime = str(int(time.time()*1000))
+		else:
+			endtime = request.GET['endtime']
+		if 'starttime' not in request.GET:
+			starttime = str(int(endtime) - 24*60*60*1000)
+		else:
+			starttime = request.GET['starttime']
+		returned_info= {}
+		returned_info['data'] = get_history_data_from_smap(starttime, endtime, uuid)
+		#get unit
+		returned_info['unit'] = get_data_unit_from_smap(uuid)
+		returned_info = json.dumps(returned_info)
+	except:
+		raise Http404
+	return HttpResponse(returned_info)
 
-    #get powerfactor data
-    path = "/Boelter Hall/NESL lab/Smart Electric Meter/VerisE30A042/PowerFactor/sensor"
-    total_current_usage = 0
-    current_usage_list=[]
-    for i in range(42):
-        query_path = path+str(i+1)
-        p_u = Path_UUID.objects.get(path=query_path)
-        uuid = p_u.uuid
-        url = "http://localhost:8079/api/prev/uuid/"+str(uuid)
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"][0]
-        total_current_usage += data[1]
-        current_usage_list.append(data[1])
-    returned_list['PowerFactor'] = []
-    for i in range(42):
-        if current_usage_list[i] != 0:
-            returned_list['PowerFactor'].append(['Sensor'+str(i+1), current_usage_list[i]/total_current_usage])
-    
-    #get real power data
-    path = "/Boelter Hall/NESL lab/Smart Electric Meter/VerisE30A042/RealPower/sensor"
-    total_current_usage = 0
-    current_usage_list=[]
-    for i in range(42):
-        query_path = path+str(i+1)
-        p_u = Path_UUID.objects.get(path=query_path)
-        uuid = p_u.uuid
-        url = "http://localhost:8079/api/prev/uuid/"+str(uuid)
-        resp = get_resp_from_server(url)
-        data = resp[0]["Readings"][0]
-        total_current_usage += data[1]
-        current_usage_list.append(data[1])
-    returned_list['RealPower'] = []
-    for i in range(42):
-        if current_usage_list[i] != 0:
-            returned_list['RealPower'].append(['Sensor'+str(i+1), current_usage_list[i]/total_current_usage])
-    
-    return HttpResponse(json.dumps(returned_list))
+def get_current_data(request):
+	if 'uuid' in request.GET:
+		uuid = request.GET['uuid']
+	elif 'path' in request.GET:
+		path = request.GET['path']
+		try:
+			p_u = Path_UUID.objects.get(path=path)
+			uuid = p_u.uuid
+		except MultipleObjectsReturned:
+			p_us = Path_UUID.objects.filter(path=reading_path).values()
+			total_data = []
+			p_u = p_us[-1]
+			uuid = p_u['uuid']
+		except:
+			raise Http404
+	else:
+		raise Http404
+	try:
+		returned_info = {}
+		returned_info['data'] = get_current_data_from_smap(uuid)
+		#get unit
+		returned_info['unit'] = get_data_unit_from_smap(uuid)
+		returned_info = json.dumps(returned_info)
+	except:
+		raise Http404
+	return HttpResponse(returned_info)
+
+def calculate_proportions(readings): #[reading for uuid1, reading for uuid2,...]
+	sums = 0
+	for reading in readings:
+		sums += reading
+	if sums == 0:
+		return []
+	proportions = []
+	for reading in readings:
+		proportions.append(float(reading/sums))
+	return proportions
+
+def get_proportions(request): #assume parameters are an array of uuids [uuid1,uuid2,...], and time duration
+	if 'uuids' in request.GET:
+		uuids = request.GET['uuids']
+		print uuids
+		uuids = uuids.split(',')
+		print uuids
+	else:
+		raise Http404
+	prop_now = True
+	if 'endtime' in request.GET or 'starttime' in request.GET:
+		prop_now = False
+		if 'endtime' not in request.GET:
+			endtime = str(int(time.time()*1000))
+		else:
+			endtime = request.GET['endtime']
+		if 'starttime' not in request.GET:
+			starttime = str(int(endtime) - 24*60*60*1000)
+		else:
+			starttime = request.GET['starttime']
+	else:
+		pass
+
+	if prop_now:
+		readings = []
+		for uuid in uuids:
+			readings.append(get_current_data_from_smap(uuid)[0][1])
+		return HttpResponse(json.dumps(calculate_proportions(readings)))
+	else:
+		readings = []
+		for uuid in uuids:
+			data = get_history_data_from_smap(starttime, endtime, uuid)
+			sum = 0
+			for datum in data:
+				sum += datum[1]
+			readings.append(sum)
+		return HttpResponse(json.dumps(calculate_proportions(readings)))
+	
+def get_energy(request):
+	if 'uuid' in request.GET:
+		uuid = request.GET['uuid']
+	elif 'path' in request.GET:
+		path = request.GET['path']
+		try:
+			p_u = Path_UUID.objects.get(path=path)
+			uuid = p_u.uuid
+		except MultipleObjectsReturned:
+			p_us = Path_UUID.objects.filter(path=reading_path).values()
+			total_data = []
+			p_u = p_us[-1]
+			uuid = p_u['uuid']
+		except:
+			raise Http404
+	else:
+		raise Http404
+
+	try:
+		if 'endtime' not in request.GET:
+			endtime = str(int(time.time()*1000))
+		else:
+			endtime = request.GET['endtime']
+		if 'starttime' not in request.GET:
+			starttime = str(int(endtime) - 24*60*60*1000)
+		else:
+			starttime = request.GET['starttime']
+		power_readings = get_history_data_from_smap(starttime, endtime, uuid)
+		energy = 0
+		for i in range(len(power_readings)-1):
+			power1 = power_readings[i]
+			power2 = power_readings[i+1]
+			energy += (power2[0]-power1[0])/1000*power1[1]
+	except:
+		raise Http404
+	return HttpResponse(json.dumps([energy]))
+
+#### home dashboard added 6/14/15
+def get_homeview(request):
+	try:
+		template = loader.get_template('data_visualization/overview_template.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_mapview(request):
+	try:
+		template = loader.get_template('data_visualization/mapview_template.html')
+		template
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_powerTab(request):
+	try:
+		template = loader.get_template('data_visualization/power_template.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_waterTab(request):
+	try:
+		template = loader.get_template('data_visualization/water_template.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_controlTab(request):
+	try:
+		template = loader.get_template('data_visualization/control_template.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_control_schedulerTab(request):
+	try:
+		template = loader.get_template('data_visualization/control_scheduler_template.html')
+		context = RequestContext(request, {})
+	except:
+		raise Http404
+	return HttpResponse(template.render(context))
+
+def get_smap_query(request):
+	try:
+		if "uuid" in request.GET and "starttime" in request.GET:
+			uuid = request.GET["uuid"]
+			starttime = int(request.GET["starttime"])
+			endtime = int(time.time()*1000)
+			if "window_unit" in request.GET:
+				querytype = request.GET["window_unit"]
+			else:
+				querytype = "minute"
+			if "window_size" in request.GET:
+				width = request.GET["window_size"]
+			else: 
+				width = 1
+			res = smap_query.get_smap_query(uuid, querytype, starttime, endtime, width)
+			resp = {"data": res}
+			resp = json.dumps(resp)
+			return HttpResponse(resp)
+		else:
+			raise Http404
+	except Exception as e:
+		print e
+		raise Http404
+
+def get_db_query(request):
+	try:
+		if "uuid" in request.GET and "length" in request.GET and "db" in request.GET:
+			uuid = request.GET["uuid"]
+			length = int(request.GET["length"])
+			db = request.GET["db"]
+			print "got uuid", uuid, "length", length, "db", db
+			res = data_query.get_db_query(uuid, length, db)
+			print "db query returned"
+			resp = {"data": res}
+			resp = json.dumps(resp)
+			return HttpResponse(resp)
+		else:
+			print "not formatted correctly"
+			raise Http404
+	except:
+		raise Http404
+		
+
+def get_hourTotal(request):
+	data_length = 0
+	if 'uuid' in request.GET:
+		uuid = request.GET['uuid']
+		print "uuid in url: " + str(uuid)
+	elif 'path' in request.GET:
+		path = request.GET['path']
+		try:
+			p_u = Path_UUID.objects.get(path=path)
+			uuid = p_u.uuid
+		except MultipleObjectsReturned:
+			p_us = Path_UUID.objects.filter(path=reading_path).values()
+			total_data = []
+			p_u = p_us[-1]
+			uuid = p_u['uuid']
+		except:
+			print "unable to match path" + str(path)
+			raise Http404
+	else:
+		print "invalid uuid" + uuid
+		raise Http404
+	try:
+		cur_hr = 0
+		#print cur_hr
+		if 'endtime' not in request.GET:
+			endtime = str(int(time.time()*1000))
+			#print endtime
+			cur_hr = int(time.time()/3600)
+			#print "current hours: "+str(cur_hr)
+		else:
+			endtime = request.GET['endtime']
+
+		if 'starttime' not in request.GET:
+			starttime = str(int(cur_hr*3600*1000))
+			#starttime = str(int(endtime) - 24*60*60*1000)
+		else:
+			starttime = request.GET['starttime']
+		returned_info= {}
+		returned_info['data'] = get_history_data_from_smap(starttime, endtime, uuid)
+		#get unit
+		returned_info['unit'] = get_data_unit_from_smap(uuid)
+		#print "returned data: "
+		#print returned_info['data'][0][1]
+		returned_info['hourTotal']=0
+		#print len(returned_info['data'])
+		for x in range(len(returned_info['data'])):
+			#print "value : \n"
+			#print returned_info['data'][x][1]
+			#print returned_info['data'][1]
+			returned_info['hourTotal'] = returned_info['hourTotal'] + returned_info['data'][x][1]
+		print returned_info['hourTotal']
+		returned_info['hourTotal'] = returned_info['hourTotal']/1000
+		#returned_info['unit_4total'] = 'kW'
+		returned_info = json.dumps(returned_info)
+	except:
+		print "Is there live data?"
+		raise Http404
+	return HttpResponse(returned_info)

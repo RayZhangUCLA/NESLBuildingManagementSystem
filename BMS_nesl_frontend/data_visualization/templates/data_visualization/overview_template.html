@@ -1,0 +1,104 @@
+{% extends 'data_visualization/base_template.html' %}
+{% block tab_script %}
+{% load staticfiles %}
+<script src= "{% static "data_visualization/js/overview.js" %}" ></script>
+{% endblock %}
+{% block homeview_tab_class %}active{% endblock %}
+{% block body_block %}
+
+<div class="row"> 
+	<div class="col-lg-5">
+		<div class="panel panel-green">
+			<div id='' class="panel-heading huge">
+				<i class="fa fa-bolt fa-1x bolt_icon"></i>
+				<div class="text-center">POWER</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-lg-5">
+		<div class="panel panel-blue">
+			<div id='' class="panel-heading huge"> 
+				<i class="fa fa-tint fa-1x bolt_icon huge"></i>
+				<div class="text-center">WATER</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row">
+	<div class="col-lg-5 text-left">
+		<div class="panel panel-green">
+			<div id='' class='panel-heading'> Monthly Electricity Usage to now </div> 
+			<div id='power_mo_totl' data-name='power'class=' panel-body huge'><i class="fa fa-spin fa-spinner"></i></div>
+		</div>
+		<div class="panel panel-green">
+			<div id='' class='panel-heading'> Monthly Electricity Bill to now </div> 
+			<div id='power_mo_bill' data-name='power' class='panel-body huge'><i class="fa fa-spin fa-spinner"></i></div>
+		</div>
+	</div>
+	<div class="col-lg-5 text-right">
+		<div class="panel panel-blue">
+			<div id='' class='panel-heading'> Monthly Water Usage to now </div> 
+			<div id='water_mo_totl' data-name='water' class=' panel-body huge'><i class="fa fa-spin fa-spinner"></i></div>
+		</div>
+		<div class="panel panel-blue">
+			<div id='' class='panel-heading'> Monthly Water Bill to now </div> 
+			<div id='water_mo_bill' data-name='water' class='panel-body huge'><i class="fa fa-spin fa-spinner"></i></div>
+		</div>
+	</div>
+
+
+</div>
+
+
+
+
+
+<div class="row">
+	<ul class = "timeline col-lg-5">
+		<div class="panel panel-warning">
+			<div class="timeline-heading">
+				<div class="panel-heading">
+					<h4 class="timeline-title"> Messages from the Utilities: Upgrading Utility Poles  </h4>
+					<p>
+						<small class="text-muted">
+							<i class="fa fa-clock-o"></i>
+							5 hours ago via email
+						</small>
+					</p>
+				</div>
+			</div>
+			<div class = "timeline-body panel-body">
+				<p>
+					You may have seen crews in your neightborhood lately. We are inspecting poles, and repariing or replacing the that don't meet required standards. 
+				</p>
+			</div>
+		</div>
+	</ul>
+	
+	<ul class="timeline col-lg-5">
+		<div class ="panel panel-warning">
+			<div class="timeline-heading">
+				<div class="panel-heading">
+					<h4 class="timeline-title"> Messages from the Utilities: Water Shut off </h4>
+					<p>	
+						<small class="text-muted">
+							<i class="fa fa-clock-o"></i>
+								3 hours ago via text	
+						</small>
+					</p>
+				</div>
+			</div>
+			<div class = "timeline-body">
+				<div class="panel-body">
+					<p>
+						Inspection scheduled on 2020/1/1 from 10AM to 2PM. Water lines will be shut off during that time. Please leave the water 
+						running for 30 seconds upon continuing service after 2PM. We apologize for the inconvenience. 
+					</p>
+				</div>
+			</div>
+		</div>
+	</ul>
+</div>
+
+{% endblock %}

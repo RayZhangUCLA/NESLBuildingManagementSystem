@@ -1,0 +1,55 @@
+{% extends 'data_visualization/base_template.html' %}
+{% load staticfiles %}
+{% load kwacros %}
+{% kwacro chart_type %}{% block chart_type %}{% endblock %}{% endkwacro %}
+{% kwacro icon_type %}{% block icon_type %}{% endblock %}{% endkwacro %}
+{% kwacro panel_color %}{% block panel_color %}{% endblock %}{% endkwacro %}
+{% block tab_script %}
+<script src="{% static "data_visualization/js/timegraph.js" %}"></script>
+<script src="{% static "data_visualization/js/stat.js" %}"></script>
+{% endblock %}
+{% block body_block %}
+<div class="row">
+	<div class="col-lg-5 col-md-6 col-sm-12 col-xs-12">
+		<div class="panel panel-info panel-{% usekwacro panel_color %}">
+			<div class="panel-heading huge">
+				<i class="fa fa-1x {% usekwacro icon_type %}"></i>
+				<div class="text-center">Today's Usage</div>
+			</div>
+			<div id="today_till_now" data-name="{% usekwacro chart_type %}" class="text-center huge"><i class="fa fa-spinner fa-spin"></i></div>
+		</div>
+	</div>
+	<div class="col-lg-5 col-md-6 col-sm-12 col-xs-12">
+		<div class="panel panel-info panel-{% usekwacro panel_color %}">
+			<div class="panel-heading huge">
+				<i class="fa fa-1x {% usekwacro icon_type %}"></i>
+				<div class="text-center">Yesterday's Usage</div>
+			</div>
+			<div id="daily_avg" data-name="{% usekwacro chart_type %}" class="text-center huge"><i class="fa fa-spinner fa-spin"></i></div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-lg-5 col-md-6 col-sm-12 col-xs-12">
+		<div id="time_series_chart" class="timegraph_switch time_series_chart_selected" data-name="{% usekwacro chart_type %}"></div>
+		<div id="time_series_chart_hour" data-name="{% usekwacro chart_type %}" class="timegraph_switch"></div>
+		<div id="time_series_chart_day" data-name="{% usekwacro chart_type %}" class="timegraph_switch"></div>
+		<div id="time_series_chart_week" data-name="{% usekwacro chart_type %}" class="timegraph_switch"></div>
+		<div id="time_series_chart_month" data-name="{% usekwacro chart_type %}" class="timegraph_switch"></div>
+		<div id="time_series_chart_year" data-name="{% usekwacro chart_type %}" class="timegraph_switch"></div>
+		<div class="btnrow">
+			<button type="button" class="btn timegraphButton btn_selected" id="minute">Minute</button>
+			<button type="button" class="btn timegraphButton" id="hour">Hour</button>
+			<button type="button" class="btn timegraphButton" id="day" >Day</button>
+			<button type="button" class="btn timegraphButton" id="week" >Week</button>
+			<button type="button" class="btn timegraphButton" id="month" >Month</button>
+			<button type="button" class="btn timegraphButton" id="year" >Year</button>
+		</div>
+
+	</div>
+	<div class="col-lg-5 col-md-6 col-sm-12 col-xs-12">
+		<div id="pie_chart" data-name="{% usekwacro chart_type %}"></div>
+	</div>
+</div>
+
+{% endblock %}

@@ -13,3 +13,34 @@ class Path_UUID(models.Model):
     def __str__(self):
         return self.path + "|" + self.uuid
 
+class Room(models.Model):
+	room_name = models.CharField(max_length=100)
+
+	def __str__(self):
+		return self.room_name
+
+class Room_Tabs(models.Model):
+	room = models.ForeignKey(Room)
+	tabs = models.CharField(max_length=1000)
+
+	def __str__(self):
+		return self.tabs
+
+class Room_PageUUIDs(models.Model):
+	room = models.ForeignKey(Room)
+	Power = models.CharField(max_length=2000)
+	Water = models.CharField(max_length=2000)
+	Gas = models.CharField(max_length=2000)
+	Environment = models.TextField() #In the order of Indoor: Temp, Humidity, Pressure, Co2, Sound; Outdoor:Temp, Humidity
+	Motion = models.TextField() #???Maybe in the order of graphs shown on webpage
+
+	def __str__(self):
+		return 'Cooming soom'
+
+class Room_Sensorlist(models.Model):
+	room = models.ForeignKey(Room)
+	sensor_list_tree = models.TextField()
+
+	def __str__(self):
+		return self.sensor_list_tree
+   

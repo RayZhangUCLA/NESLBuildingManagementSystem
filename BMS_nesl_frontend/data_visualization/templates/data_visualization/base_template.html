@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Home Dashboard</title>
+
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
+    <!-- Highchart heatmap js-->
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/modules/heatmap.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+
+    <!-- Custom CSS -->
+    
+    {% load staticfiles %}	
+    <!-- Custom scipts -->
+    {% block tab_script %}{% endblock %}
+    <link href="{% static "data_visualization/css/sb-admin.css" %}" rel="stylesheet">
+    <!-- Custom Fonts -->
+    <link href="{% static "data_visualization/font-awesome/css/font-awesome.min.css" %}" rel="stylesheet" type="text/css">
+
+
+    <!-- Morris Charts CSS -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
+    <!-- Latest compiled and minified CSS -->
+    
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+
+</head>
+<body>
+
+    <div id="wrapper">
+        <!-- Navigation -->
+        <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{% url 'home' %}">Home Dashboard</a>
+            </div>
+            <!--<ul class="nav navbar-right top-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-bell"></i> <b class="caret"></b></a>
+                    <ul class="dropdown-menu alert-dropdown">
+                        <li>
+                            <a href="#">Alert Name <span class="label label-default">Alert Badge</span></a>
+                        </li>
+                        <li>
+                            <a href="#">Alert Name <span class="label label-primary">Alert Badge</span></a>
+                        </li>
+                        <li>
+                            <a href="#">Alert Name <span class="label label-success">Alert Badge</span></a>
+                        </li>
+                        <li>
+                            <a href="#">Alert Name <span class="label label-info">Alert Badge</span></a>
+                        </li>
+                        <li class="divider"></li>
+                        <li>
+                            <a href="#">View All</a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>-->
+
+            <div class="collapse navbar-collapse navbar-ex1-collapse">
+                <ul class="nav navbar-nav side-nav">
+                    <li class= "{% block homeview_tab_class %}{% endblock %}">
+                        <a href="{% url 'home' %}"><i class="fa fa-fw fa-dashboard"></i> Overview</a>
+                    </li>
+
+                    <li class = "{% block power_tab_class %}{% endblock %}">
+                        <a href="{% url 'powerTab' %}"><i  class="fa fa-fw fa-bar-chart-o"></i> Power</a>
+                    </li>
+
+                    <li class = "{% block water_tab_class %}{% endblock %}">
+                        <a href="{% url 'waterTab' %}"><i  class="fa fa-fw fa-table"></i> Water</a>
+                    </li>
+
+                    <li class = "{% block mapview_tab_class %}{% endblock %}">
+                        <a href="{% url 'map' %}"><i class="fa fa-fw fa-file"></i> Map View </a>
+                    </li>
+
+
+		    <!--
+                    <li class = "{% block control_tab_class %}{% endblock %}">
+                        <a href="{% url 'controlTab'%}"><i class="fa fa-fw fa-table"></i> Control</a>
+                    </li>
+                    -->
+
+	
+		    <li>
+                        <a href="javascript:;" data-toggle="collapse" data-target="#demo"><i class="fa fa-fw fa-arrows-v"></i> Control <i class="fa fa-fw fa-caret-down"></i></a>
+                        <ul id="demo" class="collapse">
+                            <li>
+                                <a href="{% url 'controlTab'%}">Manual Light Control</a>
+                            </li>
+                            <li>
+                                <a href="{% url 'control_schedulerTab'%}">Usage Notification Scheduler</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!--
+		    <li>
+                        <a href="javascript:;" data-toggle="collapse" data-target="#demo"><i class="fa fa-fw fa-arrows-v"></i> Dropdown <i class="fa fa-fw fa-caret-down"></i></a>
+                        <ul id="demo" class="collapse">
+                            <li>
+                                <a href="#">Dropdown Item</a>
+                            </li>
+                            <li>
+                                <a href="#">Dropdown Item</a>
+                            </li>
+                        </ul>
+                    </li>-->
+                </ul>
+            </div>
+        </nav>
+        <!-- end of navigation bars -->
+        
+	<!-- contents of the page -->        
+        <div id="page-wrapper">
+            <div class="container-fluid">
+                {% block body_block %}
+                
+                {% endblock %}
+            </div>
+        </div><!-- end page wrapper --> 
+        <!--end countainer fluis -->
+    </div>
+    <!-- Wrapper End-->
+    
+    
+
+
+
+</body>
+
+</html>

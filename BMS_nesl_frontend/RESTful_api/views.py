@@ -13,6 +13,8 @@ import traceback
 # 	Properties: unit, location, timezone
 # 	data
 # 	statistics: avg, sum
+# The usage is as follows: http://ip:port/api/(types,eg:Path,UUID,data,Properties)?uuid=''(&Path=''&starttme=''&endtime='')
+
 
 def get_resp_from_server(url):
 	req = urllib2.Request(url)

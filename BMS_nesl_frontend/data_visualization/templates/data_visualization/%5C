@@ -1,0 +1,10 @@
+{% extends 'data_visualization/base_template.html' %}
+{% load staticfiles %}
+{% block tab_script %}<script src="{% static "data_visualization/js/timegraph.js" %}"></script>{% endblock %}
+{% block body_block %}
+<div id="today_till_now" name="{% block chart_type %}{% endblock %}"></div>
+<div id="daily_avg" name="{% block chart_type %}{% endblock %}"></div>
+<div id="time_series_chart" name="{% block chart_type %}{% endblock %}">
+</div>
+<div id="pie_chart" name="{% block chart_type %}{% endblock %}"></div>
+{% endblock %}

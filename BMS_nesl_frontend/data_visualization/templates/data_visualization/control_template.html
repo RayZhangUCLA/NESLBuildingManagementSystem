@@ -1,0 +1,70 @@
+{% extends 'data_visualization/base_template.html' %}
+{% block control_tab_class %}active{% endblock %}
+{% block body_block %}
+<h1 class='text-primary text-center'>Manual Light Control</h2>
+<br>
+<div class='row'>
+	<div class='col-lg-4'>
+	<img class='img-responsive left-block' src='http://www.macmaniacs.at/wp-content/uploads/2013/01/hue-logo.jpeg' style='max-width: 300px;'>
+	</div>
+
+		<div class="col-lg-6">
+	
+			<div class="container">
+				<div class="btn-group" role="group" aria-label="...">
+				  <button type="button" class="btn btn-default">Living Room</button>
+				  <button type="button" class="btn btn-default">Master Bedroom</button>
+				  <button type="button" class="btn btn-default">Kitchen</button>
+				  <button type="button" class="btn btn-default">Guest Bedroom</button>
+				  <button type="button" class="btn btn-default">Garage</button>
+				</div>
+			</div>
+
+			<div class='row'>
+				<div class='col-xs-6'>
+					<div class="radio">
+					  <label>
+						<input type="radio" name="on-radio" id="onRadio" value="on" checked>
+						Light is On!
+					  </label>
+					</div>		
+				</div>
+				<div class='col-xs-6'>		  
+					<div class="radio">
+					  <label>
+						<input type="radio" name="off-radio" id="offRadio" value="off">
+						Light is Off!
+					  </label>
+					</div>
+				</div>
+			</div>
+
+			<form action="/submit-light-state">
+				<div class='row'>			
+				<div class='col-xs-4'>
+				  <div class="form-group">
+					<label for="hue_color_hue">hue_color_hue</label>
+					<input type="text" class="form-control" id="hue_color_hue" placeholder="0 - 65000">
+				  </div>
+				</div>
+				<div class='col-xs-4'>
+				  <div class="form-group">
+					<label for="hue_color_sat">hue_color_sat</label>
+					<input type="text" class="form-control" id="hue_color_sat" placeholder="0 - 255">
+				  </div>
+				</div>
+				<div class='col-xs-4'>
+				  <div class="form-group">
+					<label for="hue_color_bri">hue_color_bri</label>
+					<input type="text" class="form-control" id="hue_color_bri" placeholder="0 - 255">
+				  </div>
+				</div>
+				</div>
+				<button type='submit' class='btn btn-primary'><i class='fa fa-paper-plane'></i> Submit</button>
+			</form>
+		</div>
+</div>
+
+
+<!--<iframe src="http://rd-almightyleft.ddns.net:8083/docs/" width="800" height="800"></iframe>-->
+{% endblock %}

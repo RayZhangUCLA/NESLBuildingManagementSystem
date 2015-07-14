@@ -1,0 +1,226 @@
+{% extends 'data_visualization/base_template.html' %}
+{% block control_tab_class %}active{% endblock %}
+{% block body_block %}
+
+
+<script>
+
+<!-- Water On-->
+$('#TEST').click(function(){
+			alert("TEST OK");
+		});
+
+<!-- Water Off-->
+$('#waterOffRadio').click(function(){
+			console.log("click water off")
+			$.ajax({
+			    url: 'http://rd-almightyleft.ddns.net:8083/data/water_notify_on_off/point0?state=0',
+			    type: 'PUT',
+			    success: function(result) {
+			        // Do something with the result
+			        console.log("put success")
+			    }
+			});
+		});
+
+
+<!-- Power On-->
+$('#powerOnRadio').click(function(){
+			console.log("click power on")
+			$.ajax({
+			    url: 'http://rd-almightyleft.ddns.net:8083/data/power_notify_on_off/point0?state=1',
+			    type: 'PUT',
+			    success: function(result) {
+			        // Do something with the result
+			        console.log("put success")
+			    }
+			});
+		});
+
+<!-- Power Off-->
+$('#powerOffRadio').click(function(){
+			console.log("click power off")
+			$.ajax({
+			    url: 'http://rd-almightyleft.ddns.net:8083/data/power_notify_on_off/point0?state=0',
+			    type: 'PUT',
+			    success: function(result) {
+			        // Do something with the result
+			        console.log("put success")
+			    }
+			});
+		});
+
+
+
+</script>
+
+
+<div name="power_notification_enabler" class="radio">
+	<input type="radio" name="on-radio" id="TEST" value="on">
+	<input type="radio" name="off-radio" id="powerOffRadio" value="off">
+  <label>
+	
+	Enable Notifications
+  </label>
+	
+  <label>
+	
+	Disable Notifications
+  </label>
+</div>
+
+
+
+
+<div class='row'>
+	<div class="col-lg-10">
+		<h1 class='text-primary text-center'>Usage Notification Scheduler</h1>
+	</div>
+</div>
+
+<br>
+<div class='row'>
+	<div class="col-lg-5">
+		<img class='img-responsive center-block' src='http://images.clipartpanda.com/email-clipart-4cbKGp8Xi.png' style='max-height: 200px;'>
+	</div>
+
+	<div class="col-lg-5">
+		<img class='img-responsive center-block' src='http://images.clipartpanda.com/cell-clipart-KTn49dATq.png' style='max-height: 200px;'>
+	</div>
+</div>
+<br>
+<div class='row'>
+	<div class="col-lg-5">
+		<div class="panel panel-green">
+			<div id='' class="panel-heading huge">
+				<i class="fa fa-bolt fa-1x bolt_icon"></i>
+				<div class="text-center">Power</div>
+			</div>
+		</div>
+		<form action="/submit-power-state" method="put">
+
+			<div class="form-group">
+				<label for="power_notification_enabler">Power Notifications</label>
+		
+				<div name="power_notification_enabler" class="radio">
+					
+				  <label>
+					<input type="radio" name="on-radio" id="powerOnRadio" value="on">
+					Enable Notifications
+				  </label>
+					
+				  <label>
+					<input type="radio" name="off-radio" id="powerOffRadio" value="off">
+					Disable Notifications
+				  </label>
+				</div>		
+
+			</div>
+
+
+
+			<div class="form-group">
+				<label for="notify_frequency">Notification Frequency</label>
+				<div name="notify_frequency" class="container">
+					<div class="btn-group" role="group" aria-label="...">
+						<button type="button" class="btn btn-default">Daily</button>
+						<button type="button" class="btn btn-default">Weekly</button>
+						<button type="button" class="btn btn-default">BiWeekly</button>
+						<button type="button" class="btn btn-default">Monthly</button>
+						<button type="button" class="btn btn-default">BiMonthly</button>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="form-group">
+				<label for="power_notification_types">Type of Notifications</label>
+				<div name="power_notification_types">
+					<div class="checkbox">
+					  <label>
+					    <input type="checkbox" value="">
+					    Text Message
+					  </label>
+					</div>
+					<div class="checkbox disabled">
+					  <label>
+					    <input type="checkbox" value="">
+					    Email
+					  </label>
+					</div>
+				</div>
+			</div>
+	
+			<button type='submit' class='btn btn-primary'><i class='fa fa-paper-plane'></i> Submit</button>
+		</form>
+
+	</div>	
+	<div class="col-lg-5">
+		<div class="panel panel-blue">
+			<div id='' class="panel-heading huge"> 
+				<i class="fa fa-tint fa-1x bolt_icon huge"></i>
+				<div class="text-center">Water</div>
+			</div>
+		</div>
+
+
+		<form action="/submit-water-state" method="put">
+
+			<div class="form-group">
+				<label for="water_notification_enabler">Water Notifications</label>
+		
+				<div name="water_notification_enabler" class="radio">
+				  <label>
+					<input type="radio" name="on-radio" id="waterOnRadio" value="on">
+					Enable Notifications
+				  </label>
+
+				  <label>
+					<input type="radio" name="off-radio" id="waterOffRadio" value="off">
+					Disable Notifications
+				  </label>
+				</div>		
+
+			  </div>
+
+
+
+			<div class="form-group">
+				<label for="notify_frequency">Notification Frequency</label>
+				<div name="notify_frequency" class="container">
+					<div class="btn-group" role="group" aria-label="...">
+						<button type="button" class="btn btn-default">Daily</button>
+						<button type="button" class="btn btn-default">Weekly</button>
+						<button type="button" class="btn btn-default">BiWeekly</button>
+						<button type="button" class="btn btn-default">Monthly</button>
+						<button type="button" class="btn btn-default">BiMonthly</button>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="form-group">
+				<label for="water_notification_types">Type of Notifications</label>
+				<div name="water_notification_types">
+					<div class="checkbox">
+					  <label>
+					    <input type="checkbox" value="">
+					    Text Message
+					  </label>
+					</div>
+					<div class="checkbox disabled">
+					  <label>
+					    <input type="checkbox" value="">
+					    Email
+					  </label>
+					</div>
+				</div>
+			</div>
+
+			<button type='submit' class='btn btn-primary'><i class='fa fa-paper-plane'></i> Submit</button>
+		</form>
+
+	</div>
+</div>
+<!--<iframe src="http://rd-almightyleft.ddns.net:8083/docs/" width="800" height="800"></iframe>-->
+{% endblock %}

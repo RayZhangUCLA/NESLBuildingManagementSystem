@@ -49,7 +49,7 @@ class Command(BaseCommand):
             addr = args[0]
 
         #get access to Timeseries database(influxDB)
-        timeDB = InfluxDBClient('localhost', '8051', 'root', 'root', 'smap_statistics')
+        timeDB = InfluxDBClient('ip address', 'port', 'username', 'password', 'database name')
         if not check_if_TSDB_exists(timeDB, 'smap_statistics'):
             print("Create InfluxDB Database smap_statistics")
             timeDB.create_database('smap_statistics')
